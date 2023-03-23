@@ -35,9 +35,15 @@ public class CourseController {
 
     @GetMapping(value = "/courses")
     public List<Course> getAllCourses(
+            @RequestParam(required = false, defaultValue = "") String name,
+            @RequestParam(required = false, defaultValue = "") String code,
+            @RequestParam(required = false) Integer credits,
+            @RequestParam(name = "teacher_first_name", required = false, defaultValue = "") String teacherFirstName,
+            @RequestParam(name = "teacher_last_name", required = false, defaultValue = "") String teacherLastName,
             @RequestParam("page") PageFromOne page,
-            @RequestParam("page_size") BoundedPageSize pageSize) {
-        return courseService.getAll(page, pageSize).stream()
+            @RequestParam("page_size") BoundedPageSize pageSize
+    ) {
+        return courseService.getByCriteria(name,code, credits,teacherFirstName, teacherLastName, page, pageSize).stream()
                 .map(courseMapper::toRestCourse)
                 .collect(Collectors.toUnmodifiableList());
     }

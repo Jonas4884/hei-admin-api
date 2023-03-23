@@ -55,4 +55,16 @@ public class CourseService {
         courseValidator.accept(courses);
         return courseRepository.saveAll(courses);
     }
+
+    public List<Course> getByCriteria(String name, String code, Integer credits, String teacherFirstName, String teacherLastName, PageFromOne page, BoundedPageSize pageSize) {
+        int pageValue = 1;
+        int pageSizeValue = 15;
+        if (page.getValue() != 0) pageValue = page.getValue();
+        if (pageSize.getValue() != 0) pageSizeValue = pageSize.getValue();
+        Pageable pageable = PageRequest.of(pageValue - 1, pageSizeValue);
+        if(credits == null){
+            return courseRepository.findAllByNameContainingIgnoreCaseAndCodeContainingIgnoreCaseAndMainTeacherFirstNameContainingIgnoreCaseAndMainTeacherLastNameContainingIgnoreCase(name, code, teacherFirstName, teacherLastName, pageable);
+        }
+        return courseRepository.findAllByNameContainingIgnoreCaseAndCodeContainingIgnoreCaseAndCreditsAndMainTeacherFirstNameContainingIgnoreCaseAndMainTeacherLastNameContainingIgnoreCase(name, code, credits, teacherFirstName, teacherLastName, pageable);
+    }
 }
