@@ -1,6 +1,7 @@
 package school.hei.haapi.integration;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,17 +18,16 @@ import school.hei.haapi.endpoint.rest.model.Course;
 import school.hei.haapi.endpoint.rest.model.CourseStatus;
 import school.hei.haapi.endpoint.rest.model.CrupdateCourse;
 import school.hei.haapi.endpoint.rest.model.EnableStatus;
+import school.hei.haapi.endpoint.rest.model.SortOrder;
 import school.hei.haapi.endpoint.rest.model.Teacher;
 import school.hei.haapi.endpoint.rest.model.UpdateStudentCourse;
 import school.hei.haapi.endpoint.rest.security.cognito.CognitoComponent;
 import school.hei.haapi.integration.conf.AbstractContextInitializer;
 import school.hei.haapi.integration.conf.TestUtils;
-import school.hei.haapi.model.exception.NotFoundException;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 
 import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,7 +40,11 @@ import static school.hei.haapi.integration.conf.TestUtils.assertThrowsForbiddenE
 @Testcontainers
 @ContextConfiguration(initializers = CourseIT.ContextInitializer.class)
 @AutoConfigureMockMvc
+@Slf4j
 class CourseIT {
+    private static final String TEACHER1_FIRST_NAME_PART = "On";
+    private static final String TEACHER1_FIRST_NAME_PART_INSENSITIVE_CASE = "ONe";
+    private static final String TEACHER2_LAST_NAME_PART_INSENSITIVE_CASE = "TeaChER";
     @MockBean
     private SentryConf sentryConf;
     @MockBean
@@ -54,9 +58,9 @@ class CourseIT {
     public static Course course1() {
         Course course = new Course();
         course.setId("course1_id");
-        course.setName("Name of course one");
-        course.setCode("CRS21001");
-        course.setCredits(1);
+        course.setName("Algorithmique");
+        course.setCode("PROG1");
+        course.setCredits(6);
         course.setTotalHours(1);
         course.setMainTeacher(teacher1());
         return course;
@@ -65,10 +69,22 @@ class CourseIT {
     public static Course course2() {
         Course course = new Course();
         course.setId("course2_id");
-        course.setName("Name of course two");
-        course.setCode("CRS21002");
-        course.setCredits(2);
+        course.setName("POO avancée");
+        course.setCode("PROG3");
+        course.setCredits(6);
         course.setTotalHours(2);
+        course.setMainTeacher(teacher2());
+        return course;
+    }
+
+
+    public static Course course3() {
+        Course course = new Course();
+        course.setId("course3_id");
+        course.setName("Interface web");
+        course.setCode("WEB1");
+        course.setCredits(4);
+        course.setTotalHours(1);
         course.setMainTeacher(teacher1());
         return course;
     }
@@ -83,23 +99,37 @@ class CourseIT {
         return course;
     }
 
-    public static Teacher teacher1() {
+    public static Teacher teacher2() {
         Teacher teacher = new Teacher();
-        teacher.setId("teacher1_id");
-        teacher.setFirstName("One");
+        teacher.setId("teacher2_id");
+        teacher.setFirstName("Two");
         teacher.setLastName("Teacher");
-        teacher.setEmail("test+teacher1@hei.school");
-        teacher.setRef("TCR21001");
-        teacher.setPhone("0322411125");
+        teacher.setEmail("test+teacher2@hei.school");
+        teacher.setRef("TCR21002");
+        teacher.setPhone("0322411126");
         teacher.setStatus(EnableStatus.ENABLED);
-        teacher.setSex(Teacher.SexEnum.F);
-        teacher.setBirthDate(LocalDate.parse("1990-01-01"));
-        teacher.setEntranceDatetime(Instant.parse("2021-10-08T08:27:24.00Z"));
-        teacher.setAddress("Adr 3");
+        teacher.setSex(Teacher.SexEnum.M);
+        teacher.setBirthDate(LocalDate.parse("1990-01-02"));
+        teacher.setEntranceDatetime(Instant.parse("2021-10-09T08:28:24Z"));
+        teacher.setAddress("Adr 4");
         return teacher;
     }
 
-
+    public static Teacher teacher1() {
+        Teacher teacher = new Teacher();
+        teacher.setId("teacher1_id");
+        teacher.setRef("TCR21001");
+        teacher.setFirstName("One");
+        teacher.setLastName("Teacher");
+        teacher.setSex(Teacher.SexEnum.F);
+        teacher.setBirthDate(LocalDate.parse("1990-01-01"));
+        teacher.setAddress("Adr 3");
+        teacher.setPhone("0322411125");
+        teacher.setEmail("test+teacher1@hei.school");
+        teacher.setEntranceDatetime(Instant.parse("2021-10-08T08:27:24Z"));
+        teacher.setStatus(EnableStatus.ENABLED);
+        return teacher;
+    }
 
 
     @BeforeEach
@@ -141,38 +171,101 @@ class CourseIT {
 //    }
 
     @Test
-    void teacher_read_ko() throws ApiException{
+    void sort_order() throws ApiException {
         ApiClient student1Client = anApiClient(TEACHER1_TOKEN);
 
         TeachingApi api = new TeachingApi(student1Client);
 
-        assertThrowsApiException( "{\"type\":\"404 NOT_FOUND\",\"message\":\"user not found\"}" ,  () -> api.getAllCourses( course1().getCode(),
-                course1().getName(),
-                course1().getCredits(),
-                course1().getMainTeacher().getFirstName(), course1().getMainTeacher().getLastName(),
-                creditsOrderDESC,
-                codeOrderASC,
-                1,
-                15));
-    }
-    @Test
-    void teacher_read_ok() throws ApiException {
-        ApiClient student1Client = anApiClient(TEACHER1_TOKEN);
-
-        TeachingApi api = new TeachingApi(student1Client);
-
-        List<Course> actualCourses = api.getAllCourses( course2().getCode(),
-                course2().getName(),
-                course2().getCredits(),
-                course2().getMainTeacher().getFirstName(), course2().getMainTeacher().getLastName(),
-                creditsOrderDESC,
-                codeOrderASC,
+        List<Course> actualCourses1 = api.getAllCourses(
+                null,
+                null,
+                null,
+                null,
+                null,
+                SortOrder.ASC,
+                null,
                 1,
                 15
-                );
+        );
+        List<Course> actualCourses2 = api.getAllCourses(
+                null,
+                null,
+                null,
+                null,
+                null,
+                SortOrder.DESC,
+                null,
+                1,
+                15
+        );
+        List<Course> actualCourses3 = api.getAllCourses(
+                null,
+                null,
+                null,
+                null,
+                null,
+                SortOrder.ASC,
+                SortOrder.DESC,
+                1,
+                15
+        );
 
-        assertTrue(actualCourses.contains(course1()));
+        assertEquals(List.of(course3(), course1(), course2()), actualCourses1);
+        assertEquals(List.of(course1(), course2(), course3()), actualCourses2);
+        assertEquals(List.of(course3(), course2(), course1()), actualCourses3);
     }
+
+    @Test
+    void filter_test() throws ApiException {
+        ApiClient student1Client = anApiClient(TEACHER1_TOKEN);
+
+        TeachingApi api = new TeachingApi(student1Client);
+
+        List<Course> actualCourses1 = api.getAllCourses(
+                null,
+                null,
+                null,
+                teacher1().getFirstName(),
+                null,
+                SortOrder.ASC,
+                null,
+                1,
+                15
+        );
+        List<Course> actualCourses2 = api.getAllCourses(
+                null,
+                null,
+                null,
+                TEACHER1_FIRST_NAME_PART,
+                null,
+                SortOrder.DESC,
+                null,
+                1,
+                15
+        );
+        List<Course> actualCourses3 = api.getAllCourses(
+                null,
+                null,
+                null,
+                TEACHER1_FIRST_NAME_PART_INSENSITIVE_CASE,
+                TEACHER2_LAST_NAME_PART_INSENSITIVE_CASE,
+                SortOrder.ASC,
+                SortOrder.DESC,
+                1,
+                15
+        );
+
+        log.debug(actualCourses1.stream().map(Course::getId).toString());
+        log.debug(actualCourses2.stream().map(Course::getId).toString());
+        log.debug(actualCourses3.stream().map(Course::getId).toString());
+
+        assertTrue(actualCourses1.containsAll(List.of(course3(), course1())));
+        assertEquals(2, actualCourses1.size());
+        assertTrue(actualCourses2.containsAll(List.of(course1(), course3())));
+        assertEquals(2, actualCourses2.size());
+        assertTrue(actualCourses3.containsAll(List.of(course1(), course2(), course3())));
+    }
+
     @Test
     void student_write_ko() {
         ApiClient student1Client = anApiClient(STUDENT1_TOKEN);
