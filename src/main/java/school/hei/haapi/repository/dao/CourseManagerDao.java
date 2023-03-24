@@ -6,10 +6,13 @@ import org.springframework.data.jpa.repository.query.QueryUtils;
 import org.springframework.stereotype.Repository;
 import school.hei.haapi.endpoint.rest.model.SortOrder;
 import school.hei.haapi.model.Course;
+import school.hei.haapi.model.User;
 
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.util.ArrayList;
@@ -32,43 +35,53 @@ public class CourseManagerDao {
     ) {
         CriteriaBuilder builder = entityManager.getCriteriaBuilder();
         CriteriaQuery<Course> query = builder.createQuery(Course.class);
+
         Root<Course> root = query.from(Course.class);
+        Join<Course, User> teacherJoin = root.join("mainTeacher", JoinType.INNER);
 
         List<Predicate> predicateList = new ArrayList<>();
 
-        if(code != null){
+        if (code != null) {
             predicateList.add(builder.or(
                     builder.like(builder.lower(root.get("code")), "%" + code.toLowerCase() + "%")
             ));
         }
-        if(name != null){
+
+        if (name != null) {
             predicateList.add(builder.or(
                     builder.like(builder.lower(root.get("name")), "%" + name.toLowerCase() + "%")
             ));
         }
-        if(credits != null){
+
+        if (credits != null) {
             predicateList.add(builder.or(
                     builder.equal(root.get("credits"), credits)
             ));
         }
 
-        if(teacherLastName != null){
+        if (teacherLastName != null) {
             predicateList.add(builder.or(
-                    builder.like(builder.lower(root.get("mainTeacher.lastName")), "%" + teacherLastName.toLowerCase() + "%")
+                    builder.like(builder.lower(teacherJoin.get("lastName")), "%" + teacherLastName.toLowerCase() + "%")
             ));
         }
 
-        if(teacherFirstName != null){
+        if (teacherFirstName != null) {
             predicateList.add(builder.or(
-                    builder.like(builder.lower(root.get("mainTeacher.firstName")), "%" + teacherFirstName.toLowerCase() + "%")
+                    builder.like(builder.lower(teacherJoin.get("firstName")), "%" + teacherFirstName.toLowerCase() + "%")
             ));
+        }
+
+        Predicate[] restrictions = new Predicate[predicateList.size()];
+        for (int i = 0; i < predicateList.size(); i++) {
+            restrictions[i] = predicateList.get(i);
         }
 
         query
-                .where(builder.and(predicateList.toArray(new Predicate[0])))
-                .orderBy(creditsOrder.equals(SortOrder.ASC) ? builder.asc(root.get("credits")) : builder.desc(root.get("credits")))
-                .orderBy(codeOrder.equals(SortOrder.ASC) ? builder.asc(root.get("code")) : builder.desc(root.get("code")))
-                .orderBy(QueryUtils.toOrders(pageable.getSort(), root, builder));
+                .where(builder.and(restrictions))
+                .orderBy(
+                        creditsOrder.equals(SortOrder.ASC) ? builder.asc(root.get("credits")) : builder.desc(root.get("credits")),
+                        codeOrder.equals(SortOrder.ASC) ? builder.asc(root.get("code")) : builder.desc(root.get("code"))
+                );
 
         return entityManager.createQuery(query)
                 .setFirstResult((pageable.getPageNumber()) * pageable.getPageSize())
