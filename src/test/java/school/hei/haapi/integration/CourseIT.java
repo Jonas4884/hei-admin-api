@@ -160,16 +160,6 @@ class CourseIT {
         assertThrowsForbiddenException(() -> api.crupdateCourses(List.of(new CrupdateCourse())));
     }
 
-//    @Test
-//    void student_read_ok() throws ApiException {
-//        ApiClient student1Client = anApiClient(STUDENT1_TOKEN);
-//
-//        TeachingApi api = new TeachingApi(student1Client);
-//        List<Course> actualCourses = api.getCourses(1, 15);
-//
-//        assertTrue(actualCourses.contains(course1()));
-//        assertTrue(actualCourses.contains(course2()));
-//    }
 
     @Test
     void sort_order() throws ApiException {
@@ -205,7 +195,7 @@ class CourseIT {
                 null,
                 null,
                 null,
-                SortOrder.ASC,
+                null,
                 SortOrder.DESC,
                 1,
                 15
@@ -256,13 +246,10 @@ class CourseIT {
                 15
         );
 
-        System.out.println(actualCourses1.stream().map(Course::getId).collect(Collectors.toList()));
-        System.out.println(actualCourses2.stream().map(Course::getId).collect(Collectors.toList()));
-        System.out.println(actualCourses3.stream().map(Course::getId).collect(Collectors.toList()));
+        assertEquals(actualCourses1.get(0),course3());
+        assertEquals(actualCourses2.get(0),course1());
+        assertEquals(actualCourses3.get(0),course3());
 
-//        assertTrue(actualCourses1.containsAll(List.of(course3(), course1())));
-//        assertTrue(actualCourses2.containsAll(List.of(course1(), course3())));
-//        assertTrue(actualCourses3.containsAll(List.of(course1(), course2(), course3())));
     }
 
     @Test
