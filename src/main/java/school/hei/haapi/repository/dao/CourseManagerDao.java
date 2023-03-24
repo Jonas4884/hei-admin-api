@@ -77,7 +77,7 @@ public class CourseManagerDao {
         }
 
         query
-                .where(builder.and(restrictions))
+                .where(restrictions.length == 0 ? builder.and(restrictions) : builder.or(restrictions))
                 .orderBy(
                         creditsOrder.equals(SortOrder.ASC) ? builder.asc(root.get("credits")) : builder.desc(root.get("credits")),
                         codeOrder.equals(SortOrder.ASC) ? builder.asc(root.get("code")) : builder.desc(root.get("code"))
