@@ -243,7 +243,6 @@ class CourseIT {
         assertEquals(2, actualCourses1.size());
         assertEquals(3  , actualCourses2.size());
         assertEquals(3, actualCourses3.size());
-    }
 
     @Test
     void sort_test() throws ApiException {
