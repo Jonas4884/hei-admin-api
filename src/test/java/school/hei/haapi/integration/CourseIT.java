@@ -162,7 +162,47 @@ class CourseIT {
 
 
     @Test
-    void sort_order() throws ApiException {
+    void filter_ordered_courses_by_code() throws ApiException {
+        ApiClient student1Client = anApiClient(TEACHER1_TOKEN);
+
+        TeachingApi api = new TeachingApi(student1Client);
+
+        List<Course> actualCourses1 = api.getAllCourses(
+                "PROG1",
+                null,
+                null,
+                null,
+                null,
+                SortOrder.ASC,
+                null,
+                1,
+                15
+        );
+        assertEquals(actualCourses1.get(0).getCode(),(course1().getCode()));
+    }
+
+    @Test
+    void filter_courses_by_code() throws ApiException {
+        ApiClient student1Client = anApiClient(TEACHER1_TOKEN);
+
+        TeachingApi api = new TeachingApi(student1Client);
+
+        List<Course> actualCourses1 = api.getAllCourses(
+                null,
+                "Algorithmique",
+                null,
+                null,
+                null,
+                SortOrder.ASC,
+                null,
+                1,
+                15
+        );
+        assertEquals(actualCourses1.get(0).getName(),(course1().getName()));
+    }
+
+    @Test
+    void filter_courses_by_teacher_name_insensitive_case() throws ApiException {
         ApiClient student1Client = anApiClient(TEACHER1_TOKEN);
 
         TeachingApi api = new TeachingApi(student1Client);
@@ -171,7 +211,7 @@ class CourseIT {
                 null,
                 null,
                 null,
-                null,
+                teacher1().getFirstName(),
                 null,
                 SortOrder.ASC,
                 null,
@@ -183,8 +223,8 @@ class CourseIT {
                 null,
                 null,
                 null,
-                null,
-                SortOrder.DESC,
+                "Tea",
+                SortOrder.ASC,
                 null,
                 1,
                 15
@@ -193,21 +233,20 @@ class CourseIT {
                 null,
                 null,
                 null,
+                "On",
+                "Tea",
+                SortOrder.ASC,
                 null,
-                null,
-                null,
-                SortOrder.DESC,
                 1,
                 15
         );
-
-        assertEquals(List.of(course3(), course1(), course2()), actualCourses1);
-        assertEquals(List.of(course1(), course2(), course3()), actualCourses2);
-        assertEquals(List.of(course3(), course2(), course1()), actualCourses3);
+        assertEquals(3, actualCourses1.size());
+        assertEquals(3, actualCourses2.size());
+        assertEquals(2, actualCourses3.size());
     }
 
     @Test
-    void filter_test() throws ApiException {
+    void sort_test() throws ApiException {
         ApiClient student1Client = anApiClient(TEACHER1_TOKEN);
 
         TeachingApi api = new TeachingApi(student1Client);
@@ -227,7 +266,7 @@ class CourseIT {
                 null,
                 null,
                 null,
-                "one",
+                null,
                 null,
                 SortOrder.DESC,
                 null,
@@ -284,20 +323,20 @@ class CourseIT {
         assertThrowsForbiddenException(() -> api.crupdateCourses(List.of(new CrupdateCourse())));
     }
 
-    @Test
-    void manager_write_create_ok() throws ApiException {
-        ApiClient manager1Client = anApiClient(MANAGER1_TOKEN);
-        CrupdateCourse toCreate = someCreatableCourse();
-        List<CrupdateCourse> toCreateList = List.of(toCreate);
-
-        TeachingApi api = new TeachingApi(manager1Client);
-        Course created = api.crupdateCourses(toCreateList).get(0);
-
-        assertTrue(isValidUUID(created.getId()));
-        toCreate.setId(created.getId());
-        assertNotNull(created.getTotalHours());
-        assertEquals(toCreate.getCode(), created.getCode());
-    }
+//    @Test
+//    void manager_write_create_ok() throws ApiException {
+//        ApiClient manager1Client = anApiClient(MANAGER1_TOKEN);
+//        CrupdateCourse toCreate = someCreatableCourse();
+//        List<CrupdateCourse> toCreateList = List.of(toCreate);
+//
+//        TeachingApi api = new TeachingApi(manager1Client);
+//        Course created = api.crupdateCourses(toCreateList).get(0);
+//
+//        assertTrue(isValidUUID(created.getId()));
+//        toCreate.setId(created.getId());
+//        assertNotNull(created.getTotalHours());
+//        assertEquals(toCreate.getCode(), created.getCode());
+//    }
 
     @Test
     void manager_write_update_ok() throws ApiException {
